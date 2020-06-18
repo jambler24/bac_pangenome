@@ -88,13 +88,8 @@ reads_ch        = Channel.fromFilePairs(params.reads)
 sample_sheet
   .splitCsv(header:true)
   .map{ row-> tuple(row.number, file(row.R1), file(row.R2)) }
-  .set { newSampleChannel }
+  .set { newSampleChannel, newSampleChannelFastQC }
 
-
-sample_sheet
-  .splitCsv(header:true)
-  .map{ row-> tuple(row.number, file(row.R1), file(row.R2)) }
-  .set { newSampleChannelFastQC }
 
 
 
