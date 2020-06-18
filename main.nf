@@ -274,6 +274,7 @@ process trim_galore {
     file "*_fastqc.{zip,html}" into trimgalore_fastqc_reports
     val "$number" into sampleNumber
     set number, file("*_1.fq.gz"), file("*_2.fq.gz") into vf_read_pairs
+    set number, file("*_1.fq.gz"), file("*_2.fq.gz") into unicycler_read_pairs
 
     script:
     c_r1 = clip_r1 > 0 ? "--clip_r1 ${clip_r1}" : ''
@@ -366,7 +367,7 @@ process '2B_mark_duplicates' {
 
 
 
-/* unicycler (short, long or hybrid mode!)
+/* unicycler (short mode!)
  */
 process unicycler {
     tag "$sample_id"
@@ -375,7 +376,7 @@ process unicycler {
     when: params.assembler == 'unicycler'
 
     input:
-    set sample_id, file(fq1), file(fq2), file(lrfastq) from ch_short_long_joint_unicycler
+    set sample_id, file(fq1), file(fq2) from unicycler_read_pairs
 
     output:
     set sample_id, file("${sample_id}_assembly.fasta") into (prokka_ch)
@@ -384,17 +385,8 @@ process unicycler {
     file("${sample_id}_assembly.png")
     file("${sample_id}_unicycler.log")
 
-    script:
-    if(params.assembly_type == 'long'){
-        data_param = "-l $lrfastq"
-    } else if (params.assembly_type == 'short'){
-        data_param = "-1 $fq1 -2 $fq2"
-    } else if (params.assembly_type == 'hybrid'){
-        data_param = "-1 $fq1 -2 $fq2 -l $lrfastq"
-    }
-
     """
-    unicycler $data_param --threads ${task.cpus} ${params.unicycler_args} --keep 0 -o .
+    unicycler -1 $fq1 -2 $fq2 --threads ${task.cpus} --keep 0 -o .
     mv unicycler.log ${sample_id}_unicycler.log
     # rename so that quast can use the name
     mv assembly.gfa ${sample_id}_assembly.gfa
