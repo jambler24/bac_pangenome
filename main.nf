@@ -83,14 +83,19 @@ if( params.gtf ){
 
 genome_file     = file(params.genome)
 sample_sheet    = Channel.fromPath(params.reads)
+sample_sheet_QC    = Channel.fromPath(params.reads)
 reads_ch        = Channel.fromFilePairs(params.reads)
 
 sample_sheet
   .splitCsv(header:true)
   .map{ row-> tuple(row.number, file(row.R1), file(row.R2)) }
   .set { newSampleChannel }
-  .set {newSampleChannelFastQC}
 
+
+sample_sheet_QC
+  .splitCsv(header:true)
+  .map{ row-> tuple(row.number, file(row.R1), file(row.R2)) }
+  .set { newSampleChannelFastQC }
 
 
 
