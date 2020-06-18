@@ -18,12 +18,12 @@ def helpMessage() {
     nextflow run nf-core/bacass --input input.csv --kraken2db 'path-to-kraken2db' -profile docker
     Mandatory arguments:
       -profile                      Configuration profile to use. Can use multiple (comma separated)
-                                    Available: conda, docker, singularity, awsbatch, test and more.
-      --input                       The design file used for running the pipeline in TSV format.
+                                    Available: ilifu.
+      --reads                       The sample sheet containing the paths to the fastq files, as well as sample names.
+      --genome                      The reference genome to be used in fasta format. Also acts as an outgroup.
+      --gff                         Path to GFF3 file OR (see next arg)
+      --gtf                         Path to GTF file
     Pipeline arguments:
-      --assembler                   Default: "Unicycler", Available: "Canu", "Miniasm", "Unicycler". Short & Hybrid assembly always runs "Unicycler".
-      --assembly_type               Default: "Short", Available: "Short"
-      --kraken2db                   Path to Kraken2 Database directory
       --prokka_args                 Advanced: Extra arguments to Prokka (quote and add leading space)
       --unicycler_args              Advanced: Extra arguments to Unicycler (quote and add leading space)
     Other options:
@@ -31,9 +31,6 @@ def helpMessage() {
       --email                       Set this parameter to your e-mail address to get a summary e-mail with details of the run sent to you when the workflow exits
       -name                         Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic.
 
-   Skipping options:
-      --skip_annotation             Skips the annotation with Prokka
-      --skip_kraken2                Skips the read classification with Kraken2
     """.stripIndent()
 }
 
@@ -56,56 +53,299 @@ if( !(workflow.runName ==~ /[a-z]+_[a-z]+/) ){
   custom_runName = workflow.runName
 }
 
-// Stage config files
-ch_multiqc_config = Channel.fromPath(params.multiqc_config)
-ch_output_docs = Channel.fromPath("$baseDir/docs/output.md")
 
 
 
-process trim_and_combine {
-    label 'medium'
+//Validate inputs
+if ( params.genome == false ) {
+    exit 1, "Must set a reference genome fasta file (--genome)"
+}
 
-    tag "$sample_id"
-    publishDir "${params.outdir}/${sample_id}/trimming/shortreads/", mode: 'copy'
+if ( params.reads == false ) {
+    exit 1, "Must set the path to the sample file (--reads) in csv format"
+}
 
-    input:
-    set sample_id, file(r1), file(r2) from ch_for_short_trim
+// SNPeff needs a gff, all else gtf
+if( params.gtf ){
+    Channel
+        .fromPath(params.gtf)
+        .ifEmpty { exit 1, "GTF annotation file not found: ${params.gtf}" }
+        .into { gtfFile }
+} else if( params.gff ){
+    Channel
+        .fromPath(params.gff)
+        .ifEmpty { exit 1, "GFF annotation file not found: ${params.gff}" }
+        .into { gffFile }
+} else {
+    exit 1, "No GTF or GFF3 annotation specified!"
+}
 
-    output:
-    set sample_id, file("${sample_id}_trm-cmb.R1.fastq.gz"), file("${sample_id}_trm-cmb.R2.fastq.gz") into (ch_short_for_kraken2, ch_short_for_unicycler, ch_short_for_fastqc)
-    // not keeping logs for multiqc input. for that to be useful we would need to concat first and then run skewer
 
-    script:
-    """
-    # loop over readunits in pairs per sample
-    pairno=0
-    echo "${r1} ${r2}" | xargs -n2 | while read fq1 fq2; do
-	skewer --quiet -t ${task.cpus} -m pe -q 3 -n -z \$fq1 \$fq2;
-    done
-    cat \$(ls *trimmed-pair1.fastq.gz | sort) >> ${sample_id}_trm-cmb.R1.fastq.gz
-    cat \$(ls *trimmed-pair2.fastq.gz | sort) >> ${sample_id}_trm-cmb.R2.fastq.gz
-    """
+genome_file     = file(params.genome)
+sample_sheet    = file(params.reads)
+reads_ch        = Channel.fromFilePairs(params.reads)
+
+
+
+
+/*
+ * PREPROCESSING - Convert GFF3 to GTF
+ */
+if(params.gff){
+  process convertGFFtoGTF {
+      tag "$gff"
+
+      input:
+      file gff from gffFile
+
+      output:
+      file "${gff.baseName}.gtf" into gtf_makeSTARindex, gtf_makeBED12, gtf_star, gtf_dupradar, gtf_featureCounts
+      file "${gff.baseName}.gff" into snpeff_gff
+
+      script:
+      """
+      gffread $gff -T -o ${gff.baseName}.gtf
+      """
+  }
+} else {
+  process convertGTFtoGFF {
+
+  input:
+  file gtf from gtfFile
+
+  output:
+
+  file "${gtf.baseName}.gtf" into gtf_makeSTARindex, gtf_makeBED12, gtf_star, gtf_dupradar, gtf_featureCounts
+  file "${gtf.baseName}.gff" into snpeff_gff
+
+  script:
+  """
+  gffread $gtf -o ${gtf.baseName}.gff
+  """
+
+  }
+
+}
+
+
+
+/**********
+ * PART 1: Data preparation
+ *
+ * Process 1A: Create a FASTA genome index (.fai) with samtools for GATK
+ */
+
+process '1A_prepare_genome_samtools' {
+  tag "$genome.baseName"
+
+  input:
+      file genome from genome_file
+
+  output:
+      file "${genome}.fai" into genome_index_ch
+
+  script:
+  """
+  samtools faidx ${genome}
+  """
+}
+
+
+/*
+ * Process 1B: Create a FASTA genome sequence dictionary with Picard for GATK
+ */
+
+process '1B_prepare_genome_picard' {
+  tag "$genome.baseName"
+
+  input:
+      file genome from genome_file
+  output:
+      file "${genome.baseName}.dict" into genome_dict_ch
+
+  script:
+  """
+  picard -XX:ParallelGCThreads=5 -Xmx16G -Xms16G CreateSequenceDictionary R=$genome O=${genome.baseName}.dict
+  """
 }
 
 /*
- * STEP 1 - FastQC FOR SHORT READS
-*/
-process fastqc {
-    label 'small'
-    tag "$sample_id"
-    publishDir "${params.outdir}/${sample_id}/FastQC", mode: 'copy'
+ * Process 1C: Create a FASTA genome sequence dictionary for BWA
+ */
+
+process '1C_prepare_genome_bwa' {
+  tag "$genome.baseName"
+
+  input:
+      file genome from genome_file
+  output:
+      file "${genome}.amb" into genome_bwa_amb
+      file "${genome}.ann" into genome_bwa_ann
+      file "${genome}.bwt" into genome_bwa_bwt
+      file "${genome}.pac" into genome_bwa_pac
+      file "${genome}.sa" into genome_bwa_sa
+
+  script:
+  """
+  bwa index $genome
+  """
+}
+
+
+sample_sheet
+  .splitCsv(header:true)
+  .map{ row-> tuple(row.number, file(row.R1), file(row.R2)) }
+  .set { newSampleChannel }
+
+
+sample_sheet
+  .splitCsv(header:true)
+  .map{ row-> tuple(row.number, file(row.R1), file(row.R2)) }
+  .set { newSampleChannelFastQC }
+
+
+
+/*
+ * Process 1F: FastQC -  NEED TO EDIT
+ */
+
+ process fastqc {
+    tag "$name"
+    publishDir "${params.outdir}/fastqc", mode: 'copy',
+        saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
 
     input:
-    set sample_id, file(fq1), file(fq2) from ch_short_for_fastqc
+    set number, file(R1), file(R2) from newSampleChannelFastQC
 
     output:
-    file "*_fastqc.{zip,html}" into ch_fastqc_results
+    file "*_fastqc.{zip,html}" into fastqc_results
 
     script:
     """
-    fastqc -t ${task.cpus} -q ${fq1} ${fq2}
+    fastqc -q $R1
+    fastqc -q $R2
     """
 }
+
+
+
+/*
+ * STEP 2 - Trim Galore! -- TO REPLACE Trimmomatic
+ */
+process trim_galore {
+    label 'low_memory'
+    tag "$name"
+    publishDir "${params.outdir}/trim_galore", mode: 'copy',
+        saveAs: {filename ->
+            if (filename.indexOf("_fastqc") > 0) "FastQC/$filename"
+            else if (filename.indexOf("trimming_report.txt") > 0) "logs/$filename"
+            else if (!params.saveTrimmed && filename == "where_are_my_files.txt") filename
+            else if (params.saveTrimmed && filename != "where_are_my_files.txt") filename
+            else null
+        }
+
+    input:
+    set number, file(R1), file(R2) from newSampleChannel
+
+    output:
+
+    file "*_1.fq.gz" into forwardTrimmed
+    file "*_2.fq.gz" into reverseTrimmed
+
+    file "*trimming_report.txt" into trimgalore_results
+    file "*_fastqc.{zip,html}" into trimgalore_fastqc_reports
+    val "$number" into sampleNumber
+    set number, file("*_1.fq.gz"), file("*_2.fq.gz") into vf_read_pairs
+
+    script:
+    c_r1 = clip_r1 > 0 ? "--clip_r1 ${clip_r1}" : ''
+    c_r2 = clip_r2 > 0 ? "--clip_r2 ${clip_r2}" : ''
+    tpc_r1 = three_prime_clip_r1 > 0 ? "--three_prime_clip_r1 ${three_prime_clip_r1}" : ''
+    tpc_r2 = three_prime_clip_r2 > 0 ? "--three_prime_clip_r2 ${three_prime_clip_r2}" : ''
+    if (params.singleEnd) {
+        """
+        trim_galore --fastqc --gzip $c_r1 $tpc_r1 $R1 $R2
+        """
+    } else {
+        """
+        trim_galore --paired --fastqc --gzip $c_r1 $c_r2 $tpc_r1 $tpc_r2 $R1 $R2
+
+        rename 's/val_1_001/1/' *.fq.gz
+        rename 's/val_2_001/2/' *.fq.gz
+
+        rename 's/_val_1//' *.fq.gz
+        rename 's/_val_2//' *.fq.gz
+        """
+    }
+}
+
+
+
+
+/**********
+ * PART 2: Mapping
+ *
+ * Process 2A: Align reads to the reference genome
+ */
+
+
+
+process '2A_read_mapping' {
+  input:
+    file forwardTrimmed
+    file reverseTrimmed
+    val sampleNumber
+    file genome from genome_file
+    file genome_bwa_amb
+    file genome_bwa_ann
+    file genome_bwa_bwt
+    file genome_bwa_pac
+    file genome_bwa_sa
+  output:
+    file "sample_${sampleNumber}_sorted.bam" into bamfiles
+    file "sample_${sampleNumber}_sorted.bai" into bamindexfiles
+    file "sample_${sampleNumber}_sorted.bam" into bam_rseqc
+    file "sample_${sampleNumber}_sorted.bai" into bamindexfiles_rseqc
+    file "sample_${sampleNumber}_sorted.bam" into bam_preseq
+    file "sample_${sampleNumber}_sorted.bam" into bam_forSubsamp
+    file "sample_${sampleNumber}_sorted.bam" into bam_skipSubsamp
+    file "sample_${sampleNumber}_sorted.bam" into bam_featurecounts
+  script:
+  if( aligner == 'bwa-mem' )
+    """
+    bwa mem $genome $forwardTrimmed $reverseTrimmed | samtools sort -O BAM -o sample_${sampleNumber}_sorted.bam
+    samtools index sample_${sampleNumber}_sorted.bam sample_${sampleNumber}_sorted.bai
+    """
+
+  else
+    error "Invalid aligner: ${aligner}"
+
+}
+
+
+
+
+/*
+ * Process 2B: Mark duplicate reads - EDIT for QC
+ */
+
+process '2B_mark_duplicates' {
+  label 'high_memory'
+  input:
+    file sample_bam from bamfiles
+  output:
+    file "${sample_bam.baseName}_dedup.bam" into dedup_bamfiles
+    file "${sample_bam.baseName}_dedup.bam" into bam_md
+    file "${sample_bam.baseName}_dedup.bam.bai"
+    file "${sample_bam.baseName}.txt" into picard_results
+  script:
+    """
+    picard MarkDuplicates INPUT=$sample_bam OUTPUT=${sample_bam.baseName}_dedup.bam METRICS_FILE=${sample_bam.baseName}.txt ASSUME_SORTED=true REMOVE_DUPLICATES=false
+    samtools index ${sample_bam.baseName}_dedup.bam
+    """
+}
+
+
 
 
 /* unicycler (short, long or hybrid mode!)
@@ -120,8 +360,7 @@ process unicycler {
     set sample_id, file(fq1), file(fq2), file(lrfastq) from ch_short_long_joint_unicycler
 
     output:
-    set sample_id, file("${sample_id}_assembly.fasta") into (quast_ch, prokka_ch, dfast_ch)
-    set sample_id, file("${sample_id}_assembly.gfa") into bandage_ch
+    set sample_id, file("${sample_id}_assembly.fasta") into (prokka_ch)
     file("${sample_id}_assembly.fasta") into (ch_assembly_nanopolish_unicycler,ch_assembly_medaka_unicycler)
     file("${sample_id}_assembly.gfa")
     file("${sample_id}_assembly.png")
@@ -144,31 +383,6 @@ process unicycler {
     mv assembly.fasta ${sample_id}_assembly.fasta
     Bandage image ${sample_id}_assembly.gfa ${sample_id}_assembly.png
     """
-}
-
-
-/* kraken classification: QC for sample purity, only short end reads for now
- */
-process kraken2 {
-    label 'large'
-    tag "$sample_id"
-    publishDir "${params.outdir}/${sample_id}/kraken", mode: 'copy'
-
-    input:
-    set sample_id, file(fq1), file(fq2) from ch_short_for_kraken2
-
-    output:
-    file("${sample_id}_kraken2.report")
-
-    when: !params.skip_kraken2
-
-    script:
-	"""
-    # stdout reports per read which is not needed. kraken.report can be used with pavian
-    # braken would be nice but requires readlength and correspondingly build db
-	kraken2 --threads ${task.cpus} --paired --db ${kraken2db} \
-		--report ${sample_id}_kraken2.report ${fq1} ${fq2} | gzip > kraken2.out.gz
-	"""
 }
 
 
@@ -247,75 +461,6 @@ process dfast {
 
 
 
-/*
- * Parse software version numbers
- */
-process get_software_versions {
-    publishDir "${params.outdir}/pipeline_info", mode: 'copy',
-    saveAs: {filename ->
-        if (filename.indexOf(".csv") > 0) filename
-        else null
-    }
 
-    input:
-    file quast_version from ch_quast_version
-    file porechop_version from ch_porechop_version
-    file dfast_version from ch_dfast_version_for_multiqc
-
-
-    output:
-    file 'software_versions_mqc.yaml' into software_versions_yaml
-    file "software_versions.csv"
-
-    script:
-    """
-    echo $workflow.manifest.version > v_pipeline.txt
-    echo $workflow.nextflow.version > v_nextflow.txt
-    fastqc --version > v_fastqc.txt
-    multiqc --version > v_multiqc.txt
-    prokka -v 2> v_prokka.txt
-    skewer -v > v_skewer.txt
-    kraken2 -v > v_kraken2.txt
-    Bandage -v > v_bandage.txt
-    nanopolish --version > v_nanopolish.txt
-    miniasm -V > v_miniasm.txt
-    racon --version > v_racon.txt
-    samtools --version &> v_samtools.txt 2>&1 || true
-    minimap2 --version &> v_minimap2.txt
-    NanoPlot --version > v_nanoplot.txt
-    canu --version > v_canu.txt
-    scrape_software_versions.py > software_versions_mqc.yaml
-    """
-}
-
-/*
- * STEP - MultiQC
- */
-
-process multiqc {
-    label 'small'
-    publishDir "${params.outdir}/MultiQC", mode: 'copy'
-
-    input:
-    file multiqc_config from ch_multiqc_config
-    //file prokka_logs from prokka_logs_ch.collect().ifEmpty([])
-    file ('quast_logs/*') from quast_logs_ch.collect().ifEmpty([])
-    // NOTE unicycler and kraken not supported
-    file ('fastqc/*') from ch_fastqc_results.collect().ifEmpty([])
-    file ('software_versions/*') from software_versions_yaml.collect()
-    file workflow_summary from create_workflow_summary(summary)
-
-    output:
-    file "*multiqc_report.html" into multiqc_report
-    file "*_data"
-    file "multiqc_plots"
-
-    script:
-    rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
-    rfilename = custom_runName ? "--filename " + custom_runName.replaceAll('\\W','_').replaceAll('_+','_') + "_multiqc_report" : ''
-    """
-    multiqc -f $rtitle $rfilename --config $multiqc_config .
-    """
-}
 
 

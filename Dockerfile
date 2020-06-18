@@ -111,6 +111,34 @@ ENV PATH="$PATH:/tools/bcftools-1.9"
 ENV PATH="$PATH:/tools/samtools-1.9"
 ENV PATH="$PATH:/tools/htslib-1.9"
 
+
+RUN apt-get install -y python3-pip
+RUN python3 -m pip install --upgrade cutadapt
+
+RUN curl -fsSL https://github.com/FelixKrueger/TrimGalore/archive/0.6.5.tar.gz -o /tools/trim_galore.tar.gz && tar xvzf /tools/trim_galore.tar.gz -C /tools/
+ENV PATH="$PATH:/tools/TrimGalore-0.6.5"
+
+#gffread
+RUN git clone https://github.com/gpertea/gffread /tools/gffread && cd /tools/gffread/ && make release && cd ~
+ENV PATH="$PATH:/tools/gffread/"
+
+RUN python3 -m pip install quast
+
+RUN apt-get install qtbase5-dev libqt5svg5-dev -y
+ENV QT_SELECT=5
+RUN git clone https://github.com/rrwick/Bandage.git /tools/Bandage && cd /tools/Bandage/ && qmake && make install
+
+
+RUN apt-get install -y software-properties-common
+RUN add-apt-repository ppa:deadsnakes/ppa
+RUN apt-get update
+RUN apt-get install python3.7-dev -y
+RUN apt-get install python3.7 -y
+RUN python3.7 -m pip install biopython
+RUN git clone https://github.com/nigyta/dfast_core.git /tools/dfast
+RUN ln -s /tools/dfast/dfast /usr/local/bin/
+RUN ln -s /tools/dfast/scripts/dfast_file_downloader.py /usr/local/bin/
+
 #RUN conda install -c bioconda multiqc
 
 #RUN spades.py --test
