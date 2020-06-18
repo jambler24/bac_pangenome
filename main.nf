@@ -82,7 +82,7 @@ if( params.gtf ){
 
 
 genome_file     = file(params.genome)
-sample_sheet    = Channel.fromFile(params.reads)
+sample_sheet    = Channel.fromPath(params.reads)
 reads_ch        = Channel.fromFilePairs(params.reads)
 
 sample_sheet
