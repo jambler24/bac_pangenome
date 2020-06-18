@@ -283,11 +283,11 @@ process trim_galore {
     tpc_r2 = three_prime_clip_r2 > 0 ? "--three_prime_clip_r2 ${three_prime_clip_r2}" : ''
     if (params.singleEnd) {
         """
-        trim_galore --fastqc --gzip $c_r1 $tpc_r1 $R1 $R2
+        /tools/TrimGalore-0.6.5/trim_galore --fastqc --gzip $c_r1 $tpc_r1 $R1 $R2
         """
     } else {
         """
-        trim_galore --paired --fastqc --gzip $c_r1 $c_r2 $tpc_r1 $tpc_r2 $R1 $R2
+        /tools/TrimGalore-0.6.5/trim_galore --paired --fastqc --gzip $c_r1 $c_r2 $tpc_r1 $tpc_r2 $R1 $R2
 
         rename 's/val_1_001/1/' *.fq.gz
         rename 's/val_2_001/2/' *.fq.gz
