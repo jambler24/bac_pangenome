@@ -44,6 +44,25 @@ if (params.help){
     exit 0
 }
 
+// Define regular variables so that they can be overwritten
+clip_r1 = params.clip_r1
+clip_r2 = params.clip_r2
+three_prime_clip_r1 = params.three_prime_clip_r1
+three_prime_clip_r2 = params.three_prime_clip_r2
+forward_stranded = params.forward_stranded
+reverse_stranded = params.reverse_stranded
+unstranded = params.unstranded
+
+// Preset trimming options
+if (params.pico){
+    clip_r1 = 3
+    clip_r2 = 0
+    three_prime_clip_r1 = 0
+    three_prime_clip_r2 = 3
+    forward_stranded = true
+    reverse_stranded = false
+    unstranded = false
+}
 
 
 // Has the run name been specified by the user?
