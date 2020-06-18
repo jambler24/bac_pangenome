@@ -85,6 +85,16 @@ genome_file     = file(params.genome)
 sample_sheet    = file(params.reads)
 reads_ch        = Channel.fromFilePairs(params.reads)
 
+sample_sheet
+  .splitCsv(header:true)
+  .map{ row-> tuple(row.number, file(row.R1), file(row.R2)) }
+  .set { newSampleChannel }
+
+
+sample_sheet
+  .splitCsv(header:true)
+  .map{ row-> tuple(row.number, file(row.R1), file(row.R2)) }
+  .set { newSampleChannelFastQC }
 
 
 
@@ -190,18 +200,6 @@ process '1C_prepare_genome_bwa' {
   bwa index $genome
   """
 }
-
-
-sample_sheet
-  .splitCsv(header:true)
-  .map{ row-> tuple(row.number, file(row.R1), file(row.R2)) }
-  .set { newSampleChannel }
-
-
-sample_sheet
-  .splitCsv(header:true)
-  .map{ row-> tuple(row.number, file(row.R1), file(row.R2)) }
-  .set { newSampleChannelFastQC }
 
 
 
