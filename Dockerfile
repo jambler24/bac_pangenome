@@ -148,3 +148,4 @@ RUN roary -w
 
 #docker run -v /var/run/docker.sock:/var/run/docker.sock -v /Volumes/External/bacterial_genome:/output --privileged -t --rm singularityware/docker2singularity:v2.6 -m "/shared_fs /custom_mountpoint2" bacterial_pangenome:latest
 
+# docker run -it bacterial_pangenome:latest /bin/bash
