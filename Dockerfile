@@ -120,7 +120,8 @@ ENV PATH="$PATH:/tools/TrimGalore-0.6.5"
 
 #gffread
 RUN git clone https://github.com/gpertea/gffread /tools/gffread && cd /tools/gffread/ && make release && cd ~
-ENV PATH="$PATH:/tools/gffread/"
+ENV PATH="$PATH:/tools/gffread"
+
 
 RUN python3 -m pip install quast
 
@@ -140,6 +141,10 @@ RUN ln -s /tools/dfast/dfast /usr/local/bin/
 RUN ln -s /tools/dfast/scripts/dfast_file_downloader.py /usr/local/bin/
 
 #RUN conda install -c bioconda multiqc
+
+
+RUN echo 'java -jar /usr/local/bin/picard.jar "$@"' > /usr/bin/picard && \
+    chmod +x /usr/bin/picard
 
 #RUN spades.py --test
 RUN roary -w
