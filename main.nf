@@ -134,7 +134,7 @@ if(params.gff){
 
       script:
       """
-      gffread $gff -T -o ${gff.baseName}.gtf
+      /tools/gffread//gffread $gff -T -o ${gff.baseName}.gtf
       """
   }
 } else {
@@ -150,7 +150,7 @@ if(params.gff){
 
   script:
   """
-  gffread $gtf -o ${gtf.baseName}.gff
+  /tools/gffread//gffread $gtf -o ${gtf.baseName}.gff
   """
 
   }
