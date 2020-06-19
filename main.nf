@@ -195,7 +195,7 @@ process '1B_prepare_genome_picard' {
 
   script:
   """
-  picard.jar -XX:ParallelGCThreads=5 -Xmx16G -Xms16G CreateSequenceDictionary R=$genome O=${genome.baseName}.dict
+  java -jar picard.jar -XX:ParallelGCThreads=5 -Xmx16G -Xms16G CreateSequenceDictionary R=$genome O=${genome.baseName}.dict
   """
 }
 
