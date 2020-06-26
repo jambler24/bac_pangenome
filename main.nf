@@ -336,7 +336,7 @@ process '2A_read_mapping' {
     file "sample_${sampleNumber}_sorted.bam" into bam_featurecounts
   script:
   """
-  bwa mem $genome $forwardTrimmed $reverseTrimmed | samtools sort -O BAM -o sample_${sampleNumber}_sorted.bam
+  bwa mem $genome $forwardTrimmed $reverseTrimmed | samtools sort -o sample_${sampleNumber}_sorted.bam
   samtools index sample_${sampleNumber}_sorted.bam sample_${sampleNumber}_sorted.bai
   """
 }
