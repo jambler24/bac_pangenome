@@ -295,6 +295,10 @@ process trim_galore {
 
         rename 's/_val_1//' *.fq.gz
         rename 's/_val_2//' *.fq.gz
+
+        rename 's/_R1'/_1/' *.fq.gz
+        rename 's/_R2'/_2/' *.fq.gz
+
         """
     }
 }
