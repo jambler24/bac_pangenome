@@ -339,8 +339,7 @@ process '2A_read_mapping' {
   bwa mem $genome $forwardTrimmed $reverseTrimmed | samtools sort -O BAM -o sample_${sampleNumber}_sorted.bam
   samtools index sample_${sampleNumber}_sorted.bam sample_${sampleNumber}_sorted.bai
   """
-
-
+}
 
 
 
