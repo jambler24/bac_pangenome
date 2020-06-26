@@ -335,16 +335,11 @@ process '2A_read_mapping' {
     file "sample_${sampleNumber}_sorted.bam" into bam_skipSubsamp
     file "sample_${sampleNumber}_sorted.bam" into bam_featurecounts
   script:
-  if( aligner == 'bwa-mem' )
-    """
-    bwa mem $genome $forwardTrimmed $reverseTrimmed | samtools sort -O BAM -o sample_${sampleNumber}_sorted.bam
-    samtools index sample_${sampleNumber}_sorted.bam sample_${sampleNumber}_sorted.bai
-    """
+  """
+  bwa mem $genome $forwardTrimmed $reverseTrimmed | samtools sort -O BAM -o sample_${sampleNumber}_sorted.bam
+  samtools index sample_${sampleNumber}_sorted.bam sample_${sampleNumber}_sorted.bai
+  """
 
-  else
-    error "Invalid aligner: ${aligner}"
-
-}
 
 
 
