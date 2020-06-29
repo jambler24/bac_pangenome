@@ -103,12 +103,14 @@ RUN apt-get install liblzma-dev -y
 # SamTools
 RUN wget -O /tools/htslib-1.9.tar.bz2 https://github.com/samtools/htslib/releases/download/1.9/htslib-1.9.tar.bz2 && tar -vxjf /tools/htslib-1.9.tar.bz2 -C /tools/ && cd /tools/htslib-1.9/ && make
 
-RUN wget -O /tools/samtools-1.9.tar.bz2 https://github.com/samtools/samtools/releases/download/1.9/samtools-1.9.tar.bz2 && tar -vxjf /tools/samtools-1.9.tar.bz2 -C /tools/ && cd /tools/samtools-1.9 && make
+RUN wget -O /tools/samtools-1.10.tar.bz2 https://github.com/samtools/samtools/releases/download/1.10/samtools-1.10.tar.bz2 && tar -vxjf /tools/samtools-1.10.tar.bz2 -C /tools/ && cd /tools/samtools-1.10 && make
+
+RUN curl -O -L https://sourceforge.net/projects/samtools/files/samtools/0.1.18/samtools-0.1.18.tar.bz2 && tar xvfj samtools-0.1.18.tar.bz2 && cd samtools-0.1.18 && make
 
 RUN wget -O /tools/bcftools-1.9.tar.bz2 https://github.com/samtools/bcftools/releases/download/1.9/bcftools-1.9.tar.bz2 && tar -vxjf /tools/bcftools-1.9.tar.bz2 -C /tools/ && cd /tools/bcftools-1.9 && make
 
 ENV PATH="$PATH:/tools/bcftools-1.9"
-ENV PATH="$PATH:/tools/samtools-1.9"
+ENV PATH="$PATH:/tools/samtools-1.10"
 ENV PATH="$PATH:/tools/htslib-1.9"
 
 
