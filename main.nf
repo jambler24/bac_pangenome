@@ -373,8 +373,6 @@ process unicycler {
     tag "$sample_id"
     publishDir "${params.outdir}/${sample_id}/unicycler", mode: 'copy'
 
-    when: params.assembler == 'unicycler'
-
     input:
     set sample_id, file(fq1), file(fq2) from unicycler_read_pairs
 

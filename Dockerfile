@@ -149,6 +149,8 @@ RUN apt-get install bowtie2 -y
 RUN echo 'java -jar /usr/local/bin/picard.jar "$@"' > /usr/bin/picard && \
     chmod +x /usr/bin/picard
 
+ENV PATH="/tools/samtools-1.10:$PATH"
+
 #RUN spades.py --test
 RUN roary -w
 
