@@ -144,6 +144,7 @@ RUN ln -s /tools/dfast/scripts/dfast_file_downloader.py /usr/local/bin/
 
 #RUN conda install -c bioconda multiqc
 
+RUN apt-get install bowtie2 -y
 
 RUN echo 'java -jar /usr/local/bin/picard.jar "$@"' > /usr/bin/picard && \
     chmod +x /usr/bin/picard
