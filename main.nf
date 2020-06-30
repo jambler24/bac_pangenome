@@ -370,6 +370,7 @@ process '2B_mark_duplicates' {
 /* unicycler (short mode!)
  */
 process unicycler {
+    label 'high_memory'
     tag "$sample_id"
     publishDir "${params.outdir}/${sample_id}/unicycler", mode: 'copy'
 
