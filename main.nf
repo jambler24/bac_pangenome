@@ -384,7 +384,7 @@ process unicycler {
     file("${sample_id}_unicycler.log")
 
     """
-    unicycler -1 $fq1 -2 $fq2 --threads ${task.cpus} --keep 0 -o .
+    unicycler -1 $fq1 -2 $fq2 --threads ${task.cpus} --pilon_path /usr/local/bin/pilon-1.23.jar --keep 0 -o .
     mv unicycler.log ${sample_id}_unicycler.log
     # rename so that quast can use the name
     mv assembly.gfa ${sample_id}_assembly.gfa
