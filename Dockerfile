@@ -151,6 +151,14 @@ RUN echo 'java -jar /usr/local/bin/picard.jar "$@"' > /usr/bin/picard && \
 
 ENV PATH="/tools/samtools-1.10:$PATH"
 
+# Install pilon
+
+RUN mkdir /tools/pilon/
+RUN curl -fkSL https://github.com/broadinstitute/pilon/releases/download/v1.23/pilon-1.23.jar > /usr/local/bin/pilon-1.23.jar && chmod +x /usr/local/bin/pilon-1.23.jar
+
+RUN echo 'java -jar /usr/local/bin/pilon-1.23.jar "$@"' > /usr/bin/pilon && \
+    chmod +x /usr/bin/pilon
+
 #RUN spades.py --test
 RUN roary -w
 
