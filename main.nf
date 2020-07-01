@@ -463,8 +463,8 @@ process dfast {
 
    script:
    """
-   dfast --genome ${fasta} --config $config
-   dfast &> v_dfast.txt 2>&1 || true
+   python3 /usr/local/bin/dfast --genome ${fasta} --config $config
+   python3 /usr/local/bin/dfast &> v_dfast.txt 2>&1 || true
    """
 }
 

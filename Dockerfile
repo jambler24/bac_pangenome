@@ -70,9 +70,6 @@ RUN which makeblastdb
 RUN apt-get install libdatetime-perl libxml-simple-perl libdigest-md5-perl git default-jre bioperl
 RUN cpan Bio::Perl
 
-RUN git clone https://github.com/tseemann/prokka.git $HOME/prokka
-RUN $HOME/prokka/bin/prokka --setupdb
-
 RUN git clone https://github.com/rrwick/Unicycler.git $HOME/Unicycler && cd $HOME/Unicycler && python3 setup.py install && cd ~
 
 
@@ -158,6 +155,17 @@ RUN curl -fkSL https://github.com/broadinstitute/pilon/releases/download/v1.23/p
 
 RUN echo 'java -jar /usr/local/bin/pilon-1.23.jar "$@"' > /usr/bin/pilon && \
     chmod +x /usr/bin/pilon
+
+RUN apt-get install python-setuptools pkg-config libfreetype6-dev libpng-dev python-matplotlib -y
+RUN apt-get install python-pip -y
+RUN pip install --upgrade pip
+RUN pip install joblib
+RUN wget https://downloads.sourceforge.net/project/quast/quast-5.0.2.tar.gz && tar -xzf quast-5.0.2.tar.gz && cd quast-5.0.2 && ./setup.py install
+RUN cd ~
+
+RUN git clone https://github.com/tseemann/prokka.git /tools/prokka
+RUN /tools/prokka/bin/prokka --setupdb
+ENV PATH=/tools/prokka/bin/:$PATH
 
 #RUN spades.py --test
 RUN roary -w
