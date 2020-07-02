@@ -426,7 +426,7 @@ process quast {
 process prokka {
    label 'high_memory'
    tag "$sample_id"
-   publishDir "${params.outdir}/${sample_id}/", mode: 'copy'
+   publishDir "${params.outdir}/sample_${sample_id}/", mode: 'copy'
 
    input:
    set sample_id, file(fasta) from prokka_ch
@@ -440,7 +440,7 @@ process prokka {
 
    script:
    """
-   prokka --cpus ${task.cpus} --prefix "${sample_id}" --outdir ${sample_id}_annotation ${params.prokka_args} ${fasta}
+   prokka --cpus ${task.cpus} --prefix "${sample_id}" --outdir ${sample_id}_annotation ${fasta}
    """
 }
 
