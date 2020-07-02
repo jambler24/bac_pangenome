@@ -424,7 +424,7 @@ process quast {
  * Annotation with prokka
  */
 process prokka {
-   label 'large'
+   label 'high_memory'
    tag "$sample_id"
    publishDir "${params.outdir}/${sample_id}/", mode: 'copy'
 
@@ -432,13 +432,11 @@ process prokka {
    set sample_id, file(fasta) from prokka_ch
 
    output:
-   file("${sample_id}_annotation/")
+   file("${fasta_prefix}/${fasta_prefix}.gff") into gff
    // multiqc prokka module is just a stub using txt. see https://github.com/ewels/MultiQC/issues/587
    // also, this only makes sense if we could set genus/species/strain. otherwise all samples
    // are the same
    // file("${sample_id}_annotation/*txt") into prokka_logs_ch
-
-   when: !params.skip_annotation && params.annotation_tool == 'prokka'
 
    script:
    """
@@ -469,6 +467,24 @@ process dfast {
 }
 
 
+/*
+ * STEP ? - Roary - rapid large-scale prokaryote pan genome analysis
+ */
+process roary {
+    publishDir "${params.outdir}/roary", mode: 'copy'
+
+    input:
+    file gff from gff.collect()
+
+    output:
+    file("*") into roary
+    file("pan_genome_reference.fa") into pan_genome
+
+    script:
+    """
+    roary -e -n -v -r $gff
+    """
+}
 
 
 
