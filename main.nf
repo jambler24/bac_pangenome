@@ -432,7 +432,7 @@ process prokka {
    set sample_id, file(fasta) from prokka_ch
 
    output:
-   file("${fasta_prefix}/${fasta_prefix}.gff") into gff
+   file("${sample_id}/${sample_id}.gff") into gff
    // multiqc prokka module is just a stub using txt. see https://github.com/ewels/MultiQC/issues/587
    // also, this only makes sense if we could set genus/species/strain. otherwise all samples
    // are the same
