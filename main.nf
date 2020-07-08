@@ -263,6 +263,7 @@ process '1C_prepare_genome_bwa' {
 
     output:
     file "*_fastqc.{zip,html}" into fastqc_results
+    file "*_fastqc.{zip,html}" into ch_fastqc_results
 
     script:
     """
