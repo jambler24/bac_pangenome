@@ -542,7 +542,7 @@ process multiqc {
 
     input:
     file multiqc_config from ch_multiqc_config
-    #file ('software_versions/*') from software_versions_yaml
+    //file ('software_versions/*') from software_versions_yaml
     file ('quast_logs/*') from quast_logs_ch.collect().ifEmpty([])
     file ('fastqc/*') from ch_fastqc_results.collect().ifEmpty([])
     path ('trim_galore/*') from ch_trimgalore_results_mqc.collect().ifEmpty([])
