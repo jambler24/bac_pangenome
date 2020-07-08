@@ -541,7 +541,6 @@ process multiqc {
     input:
     file multiqc_config
     file ('software_versions/*') from software_versions_yaml
-    file workflow_summary from create_workflow_summary(summary)
     file ('quast_logs/*') from quast_logs_ch.collect().ifEmpty([])
     file ('fastqc/*') from ch_fastqc_results.collect().ifEmpty([])
     path ('trim_galore/*') from ch_trimgalore_results_mqc.collect().ifEmpty([])
