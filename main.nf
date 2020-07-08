@@ -138,7 +138,8 @@ process get_software_versions {
     trim_galore --version > v_trim_galore.txt
     picard MarkDuplicates --version &> v_picard.txt  || true
     echo \$(bwa 2>&1) > v_bwa.txt
-    scrape_software_versions.py > software_versions_mqc.yaml
+    #scrape_software_versions.py > software_versions_mqc.yaml
+    echo "not yet" > software_versions_mqc.yaml
     """
 }
 
@@ -541,7 +542,7 @@ process multiqc {
 
     input:
     file multiqc_config from ch_multiqc_config
-    file ('software_versions/*') from software_versions_yaml
+    #file ('software_versions/*') from software_versions_yaml
     file ('quast_logs/*') from quast_logs_ch.collect().ifEmpty([])
     file ('fastqc/*') from ch_fastqc_results.collect().ifEmpty([])
     path ('trim_galore/*') from ch_trimgalore_results_mqc.collect().ifEmpty([])
