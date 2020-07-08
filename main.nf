@@ -119,6 +119,25 @@ sample_sheet_QC
 
 
 /*
+ * Parse software version numbers
+ */
+process get_software_versions {
+
+    output:
+    file 'software_versions_mqc.yaml' into software_versions_yaml
+
+    script:
+    """
+    echo $workflow.manifest.version > v_pipeline.txt
+    echo $workflow.nextflow.version > v_nextflow.txt
+    multiqc --version > v_multiqc.txt
+    scrape_software_versions.py > software_versions_mqc.yaml
+    """
+}
+
+
+
+/*
  * PREPROCESSING - Convert GFF3 to GTF
  */
 if(params.gff){
@@ -372,7 +391,7 @@ process '2B_mark_duplicates' {
 process unicycler {
     label 'high_memory'
     tag "$sample_id"
-    publishDir "${params.outdir}/${sample_id}/unicycler", mode: 'copy'
+    publishDir "${params.outdir}/${sample_id}_assembly/unicycler", mode: 'copy'
 
     input:
     set sample_id, file(fq1), file(fq2) from unicycler_read_pairs
@@ -399,7 +418,7 @@ process unicycler {
  */
 process quast {
   tag {"$sample_id"}
-  publishDir "${params.outdir}/${sample_id}/QUAST", mode: 'copy'
+  publishDir "${params.outdir}/${sample_id}_assembly/QUAST", mode: 'copy'
 
   input:
   set sample_id, file(fasta) from quast_ch
@@ -426,7 +445,7 @@ process quast {
 process prokka {
    label 'high_memory'
    tag "$sample_id"
-   publishDir "${params.outdir}/sample_${sample_id}/", mode: 'copy'
+   publishDir "${params.outdir}/${sample_id}_assembly/prokka", mode: 'copy'
 
    input:
    set sample_id, file(fasta) from prokka_ch
@@ -487,5 +506,32 @@ process roary {
 }
 
 
+
+
+/*
+ * MultiQC
+ */
+process multiqc {
+    publishDir "${params.outdir}/MultiQC", mode: 'copy'
+
+    input:
+    file multiqc_config
+    file ('software_versions/*') from software_versions_yaml
+    file workflow_summary from create_workflow_summary(summary)
+    file ('quast_logs/*') from quast_logs_ch.collect().ifEmpty([])
+    file ('fastqc/*') from ch_fastqc_results.collect().ifEmpty([])
+
+    output:
+    file "*multiqc_report.html" into multiqc_report
+    file "*_data"
+    file "multiqc_plots"
+
+    script:
+    rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
+    rfilename = custom_runName ? "--filename " + custom_runName.replaceAll('\\W','_').replaceAll('_+','_') + "_multiqc_report" : ''
+    """
+    multiqc -f $rtitle $rfilename --config $multiqc_config .
+    """
+}
 
 

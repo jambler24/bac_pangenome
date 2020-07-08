@@ -167,6 +167,8 @@ RUN git clone https://github.com/tseemann/prokka.git /tools/prokka
 RUN /tools/prokka/bin/prokka --setupdb
 ENV PATH=/tools/prokka/bin/:$PATH
 
+RUN pip install multiqc
+
 #RUN spades.py --test
 RUN roary -w
 
