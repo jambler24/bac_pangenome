@@ -168,6 +168,10 @@ RUN /tools/prokka/bin/prokka --setupdb
 ENV PATH=/tools/prokka/bin/:$PATH
 
 RUN pip install multiqc
+RUN apt-get install libgsl-dev -y
+
+RUN git clone --recurse-submodules https://github.com/smithlabcode/preseq.git /tools/preseq && cd /tools/preseq && make all
+ENV PATH=/tools/preseq/:$PATH
 
 #RUN spades.py --test
 RUN roary -w

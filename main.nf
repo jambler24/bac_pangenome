@@ -128,9 +128,15 @@ process get_software_versions {
 
     script:
     """
+    echo \$(bamtools --version 2>&1) > v_bamtools.txt
+    samtools --version > v_samtools.txt
     echo $workflow.manifest.version > v_pipeline.txt
     echo $workflow.nextflow.version > v_nextflow.txt
+    preseq &> v_preseq.txt
     multiqc --version > v_multiqc.txt
+    trim_galore --version > v_trim_galore.txt
+    picard MarkDuplicates --version &> v_picard.txt  || true
+    echo \$(bwa 2>&1) > v_bwa.txt
     scrape_software_versions.py > software_versions_mqc.yaml
     """
 }
@@ -384,6 +390,24 @@ process '2B_mark_duplicates' {
 }
 
 
+  /*
+   * STEP 2C? - preseq analysis
+   */
+  process preseq {
+      tag "${bam_preseq.baseName - '.sorted'}"
+      publishDir "${params.outdir}/preseq", mode: 'copy'
+
+      input:
+      file bam_preseq
+
+      output:
+      file "${bam_preseq.baseName}.ccurve.txt" into preseq_results
+
+      script:
+      """
+      preseq lc_extrap -v -B $bam_preseq -o ${bam_preseq.baseName}.ccurve.txt
+      """
+  }
 
 
 /* unicycler (short mode!)
@@ -520,6 +544,8 @@ process multiqc {
     file workflow_summary from create_workflow_summary(summary)
     file ('quast_logs/*') from quast_logs_ch.collect().ifEmpty([])
     file ('fastqc/*') from ch_fastqc_results.collect().ifEmpty([])
+    path ('trim_galore/*') from ch_trimgalore_results_mqc.collect().ifEmpty([])
+    file ('preseq/*') from preseq_results.collect().ifEmpty([])
 
     output:
     file "*multiqc_report.html" into multiqc_report
