@@ -72,7 +72,8 @@ if( !(workflow.runName ==~ /[a-z]+_[a-z]+/) ){
   custom_runName = workflow.runName
 }
 
-
+// Stage config files
+ch_multiqc_config = file(params.multiqc_config, checkIfExists: true)
 
 
 //Validate inputs
@@ -539,7 +540,7 @@ process multiqc {
     publishDir "${params.outdir}/MultiQC", mode: 'copy'
 
     input:
-    file multiqc_config
+    file multiqc_config from ch_multiqc_config
     file ('software_versions/*') from software_versions_yaml
     file ('quast_logs/*') from quast_logs_ch.collect().ifEmpty([])
     file ('fastqc/*') from ch_fastqc_results.collect().ifEmpty([])
