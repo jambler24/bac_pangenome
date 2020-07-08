@@ -297,7 +297,7 @@ process trim_galore {
     file "*_1.fq.gz" into forwardTrimmed
     file "*_2.fq.gz" into reverseTrimmed
 
-    file "*trimming_report.txt" into trimgalore_results
+    file "*trimming_report.txt" into ch_trimgalore_results_mqc
     file "*_fastqc.{zip,html}" into trimgalore_fastqc_reports
     val "$number" into sampleNumber
     set number, file("*_1.fq.gz"), file("*_2.fq.gz") into vf_read_pairs
