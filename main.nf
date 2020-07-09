@@ -392,24 +392,6 @@ process '2B_mark_duplicates' {
 }
 
 
-  /*
-   * STEP 2C? - preseq analysis
-   */
-  process preseq {
-      tag "${bam_preseq.baseName - '.sorted'}"
-      publishDir "${params.outdir}/preseq", mode: 'copy'
-
-      input:
-      file bam_preseq
-
-      output:
-      file "${bam_preseq.baseName}.ccurve.txt" into preseq_results
-
-      script:
-      """
-      preseq lc_extrap -v -B $bam_preseq -o ${bam_preseq.baseName}.ccurve.txt
-      """
-  }
 
 
 /* unicycler (short mode!)
@@ -546,7 +528,6 @@ process multiqc {
     file ('quast_logs/*') from quast_logs_ch.collect().ifEmpty([])
     file ('fastqc/*') from ch_fastqc_results.collect().ifEmpty([])
     path ('trim_galore/*') from ch_trimgalore_results_mqc.collect().ifEmpty([])
-    file ('preseq/*') from preseq_results.collect().ifEmpty([])
 
     output:
     file "*multiqc_report.html" into multiqc_report
