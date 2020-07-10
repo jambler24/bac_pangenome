@@ -531,16 +531,17 @@ process multiqc {
     //path ('trim_galore/*') from ch_trimgalore_results_mqc.collect().ifEmpty([])
 
     output:
-    file "*multiqc_report.html" into multiqc_report
-    file "*_data"
-    file "multiqc_plots"
+    //file "*multiqc_report.html" into multiqc_report
+    //file "*_data"
+    //file "multiqc_plots"
+    file "error.txt"
 
     script:
     rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
     rfilename = custom_runName ? "--filename " + custom_runName.replaceAll('\\W','_').replaceAll('_+','_') + "_multiqc_report" : ''
     """
-    multiqc -f $rtitle $rfilename --config $multiqc_config .
-
+    #multiqc -f $rtitle $rfilename --config $multiqc_config .
+    echo "too many bugs" > error.txt
     """
 }
 
