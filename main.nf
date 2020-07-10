@@ -442,6 +442,7 @@ process quast {
   """
   quast.py -t ${task.cpus} -o ${sample_id}_assembly_QC ${fasta}
   quast.py -v > v_quast.txt
+  mv report.tsv sample_${sample_id}_report.tsv
   """
 }
 
