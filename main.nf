@@ -436,7 +436,7 @@ process quast {
   // name clash with other samples we need a directory named by sample
   file("${sample_id}_assembly_QC/")
   file("${sample_id}_assembly_QC/report.tsv") into quast_logs_ch
-  file("v_quast.txt") into ch_quast_version
+  file("v_quast_${sample_id}.txt") into ch_quast_version
 
   script:
   """
