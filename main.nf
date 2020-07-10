@@ -441,6 +441,7 @@ process quast {
   script:
   """
   quast.py -t ${task.cpus} -o ${sample_id}_assembly_QC ${fasta}
+  quast.py -v > v_quast_${sample_id}.txt
   """
 }
 
