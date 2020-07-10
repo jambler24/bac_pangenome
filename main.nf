@@ -435,13 +435,14 @@ process quast {
   // multiqc only detects a file called report.tsv. to avoid
   // name clash with other samples we need a directory named by sample
   file("${sample_id}_assembly_QC/")
-  file("${sample_id}_assembly_QC/report.tsv") into quast_logs_ch
+  file("${sample_id}_assembly_QC/${sample_id}_report.tsv") into quast_logs_ch
   file("v_quast_${sample_id}.txt") into ch_quast_version
 
   script:
   """
   quast.py -t ${task.cpus} -o ${sample_id}_assembly_QC ${fasta}
   quast.py -v > v_quast_${sample_id}.txt
+  mv ${sample_id}_assembly_QC/report.tsv ${sample_id}_assembly_QC/${sample_id}_report.tsv
   """
 }
 
