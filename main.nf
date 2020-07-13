@@ -469,6 +469,7 @@ process prokka {
    script:
    """
    prokka --cpus ${task.cpus} --prefix "${sample_id}" --outdir ${sample_id}_annotation ${fasta}
+   mv ${sample_id}_annotation/*.gff ${sample_id}_annotation/${sample_id}.gff
    """
 }
 
