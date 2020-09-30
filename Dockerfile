@@ -170,8 +170,17 @@ ENV PATH=/tools/prokka/bin/:$PATH
 RUN pip install multiqc
 RUN apt-get install libgsl-dev -y
 
-RUN git clone --recurse-submodules https://github.com/smithlabcode/preseq.git /tools/preseq && cd /tools/preseq && make all
+RUN pip install scoary
+# One day...
+#RUN python3 -m pip install scoary
+
+
+# Preseq install
+RUN Rscript -e 'install.packages("preseqR", repos="https://cloud.r-project.org")'
+RUN curl -fsSL https://github.com/smithlabcode/preseq/releases/download/v2.0.3/preseq_v2.0.3.tar.bz2 -o /tools/preseq_v2.0.3.tar.bz2 && tar xvjf /tools/preseq_v2.0.3.tar.bz2 -C /tools/
+RUN cd /tools/preseq/ && make && make install
 ENV PATH=/tools/preseq/:$PATH
+
 
 #RUN spades.py --test
 RUN roary -w
@@ -181,3 +190,6 @@ RUN roary -w
 #docker run -v /var/run/docker.sock:/var/run/docker.sock -v /Volumes/External/bacterial_genome:/output --privileged -t --rm singularityware/docker2singularity:v2.6 -m "/shared_fs /custom_mountpoint2" bacterial_pangenome:latest
 
 # docker run -it bacterial_pangenome:latest /bin/bash
+
+
+rsync -avrhP --append -e ssh ./bacterial_pangenome_latest-2020-09-30-6c4b79c8b27f.simg jambler@transfer.ilifu.ac.za:/cbio/users/jambler/images/

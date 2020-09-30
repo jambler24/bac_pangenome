@@ -1,9 +1,9 @@
 #!/usr/bin/env nextflow
 /*
 ========================================================================================
-                         nf-core/bacass
+                  Bacterial genome assembly, pan-genome and mGWAS pipeline
 ========================================================================================
- Bacterial Genome Assembly and Analysis Pipeline.
+ Extended from the nf-core bacass pipeline.
  #### Homepage / Documentation
  To be done
 ----------------------------------------------------------------------------------------
@@ -85,7 +85,7 @@ if ( params.reads == false ) {
     exit 1, "Must set the path to the sample file (--reads) in csv format"
 }
 
-// SNPeff needs a gff, all else gtf
+// SNPeff needs a gff, all else gtf.
 if( params.gtf ){
     Channel
         .fromPath(params.gtf)
@@ -252,10 +252,10 @@ process '1C_prepare_genome_bwa' {
 
 
 /*
- * Process 1F: FastQC -  NEED TO EDIT
+ * Process 1D: FastQC -  NEED TO EDIT
  */
 
- process fastqc {
+ process 1D_fastqc {
     tag "$name"
     publishDir "${params.outdir}/fastqc", mode: 'copy',
         saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
@@ -276,10 +276,13 @@ process '1C_prepare_genome_bwa' {
 
 
 
-/*
- * STEP 2 - Trim Galore! -- TO REPLACE Trimmomatic
+/**********
+ * PART 2: Data filtering and trimming
+ *
+ * STEP 1 - Trim Galore!
  */
-process trim_galore {
+
+process 2A_trim_galore {
     label 'low_memory'
     tag "$name"
     publishDir "${params.outdir}/trim_galore", mode: 'copy',
@@ -332,16 +335,11 @@ process trim_galore {
 
 
 
-
-/**********
- * PART 2: Mapping
- *
- * Process 2A: Align reads to the reference genome
+/*
+ * Process 2B: Align reads to the reference genome using bwa mem
  */
 
-
-
-process '2A_read_mapping' {
+process '2B_read_mapping' {
   label 'high_memory'
   input:
     file forwardTrimmed
@@ -372,10 +370,10 @@ process '2A_read_mapping' {
 
 
 /*
- * Process 2B: Mark duplicate reads - EDIT for QC
+ * Process 2C: Mark duplicate reads with picard - EDIT for QC
  */
 
-process '2B_mark_duplicates' {
+process '2C_mark_duplicates' {
   label 'high_memory'
   input:
     file sample_bam from bamfiles
@@ -393,10 +391,13 @@ process '2B_mark_duplicates' {
 
 
 
+/**********
+ * PART 3: Assembly and annotation
+ *
+ * STEP 1 - Unicycler (short mode!) for genome assembly
+*/
 
-/* unicycler (short mode!)
- */
-process unicycler {
+process 3A_unicycler {
     label 'high_memory'
     tag "$sample_id"
     publishDir "${params.outdir}/${sample_id}_assembly/unicycler", mode: 'copy'
@@ -422,9 +423,10 @@ process unicycler {
 }
 
 
-/* assembly qc with quast
- */
-process quast {
+/*
+* Assembly qc with quast
+*/
+process 3B_quast {
   tag {"$sample_id"}
   publishDir "${params.outdir}/${sample_id}_assembly/QUAST", mode: 'copy'
 
@@ -472,6 +474,9 @@ process prokka {
    """
 }
 
+/*
+ * Annotation with dfast (if annotation_tool == 'dfast')
+ */
 process dfast {
    tag "$sample_id"
    publishDir "${params.outdir}/${sample_id}/", mode: 'copy'
@@ -495,9 +500,12 @@ process dfast {
 }
 
 
-/*
- * STEP ? - Roary - rapid large-scale prokaryote pan genome analysis
+/**********
+ * PART 4: pan-genome analysis and mGWAS
+ *
+ * STEP 1 - Roary - rapid large-scale prokaryote pan genome analysis
  */
+
 process roary {
     publishDir "${params.outdir}/roary", mode: 'copy'
 
@@ -515,11 +523,12 @@ process roary {
 }
 
 
-
-
-/*
+/**********
+ * PART 5: Assembly and annotation
+ *
  * MultiQC
  */
+
 process multiqc {
     publishDir "${params.outdir}/MultiQC", mode: 'copy'
 
