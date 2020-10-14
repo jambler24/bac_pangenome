@@ -26,6 +26,7 @@ def helpMessage() {
     Pipeline arguments:
       --prokka_args                 Advanced: Extra arguments to Prokka (quote and add leading space)
       --unicycler_args              Advanced: Extra arguments to Unicycler (quote and add leading space)
+      --phenotype_file              Dichotomized csv file containing phenotype information for the samples. (Optional, needs to be added below)
     Other options:
       --outdir                      The output directory where the results will be saved
       --email                       Set this parameter to your e-mail address to get a summary e-mail with details of the run sent to you when the workflow exits
@@ -470,7 +471,7 @@ process prokka {
 
    script:
    """
-   prokka --cpus ${task.cpus} --prefix "sample_${sample_id}" --outdir ${sample_id}_annotation ${fasta}
+   prokka --cpus ${task.cpus} --prefix sample_${sample_id} --outdir ${sample_id}_annotation ${fasta}
    """
 }
 
@@ -515,12 +516,56 @@ process roary {
     output:
     file("*") into roary
     file("pan_genome_reference.fa") into pan_genome
+    file("gene_presence_absence.csv") into mGWAS_GPA
 
     script:
     """
     roary -e -n -v -r $gff
     """
 }
+
+
+/*
+* Create required mGWAS input files using the output of roary
+*/
+
+if(params.phenotype_file) {
+    process post_roary {
+
+        input:
+        file sample_phenotype_info from params.phenotype_file
+
+        output:
+        file("traits.csv") into traits_file
+
+        script:
+        """
+        python3 post_roary.py --phenotype_data $sample_phenotype_info
+        """
+    }
+}
+
+/*
+* Run scoary
+*/
+
+if (traits_file) {
+    process scoary {
+
+    input:
+    file traits_file
+    file mGWAS_GPA
+
+    output:
+    file("*") into scoary
+
+    script:
+    """
+    scoary -g $mGWAS_GPA -t $traits_file
+    """
+    }
+}
+
 
 
 /**********

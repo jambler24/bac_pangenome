@@ -1,3 +1,4 @@
 .idea*
 Dockerfile_full
+.DS_Store
 main_full.nf
