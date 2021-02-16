@@ -26,7 +26,7 @@ def helpMessage() {
     Pipeline arguments:
       --prokka_args                 Advanced: Extra arguments to Prokka (quote and add leading space)
       --unicycler_args              Advanced: Extra arguments to Unicycler (quote and add leading space)
-      --phenotype_file              Dichotomized csv file containing phenotype information for the samples. (Optional, needs to be added below)
+      --phenotype_info              Dichotomized csv file containing phenotype information for the samples. (Optional, needs to be added below)
     Other options:
       --outdir                      The output directory where the results will be saved
       --email                       Set this parameter to your e-mail address to get a summary e-mail with details of the run sent to you when the workflow exits
@@ -99,6 +99,14 @@ if( params.gtf ){
         .into { gffFile }
 } else {
     exit 1, "No GTF or GFF3 annotation specified!"
+}
+
+
+if(params.phenotype_info{
+    Channel
+        .fromPath(params.phenotype_info)
+        .ifEmpty { exit 1, "Phenotype file not found: ${params.phenotype_info}" }
+        .into { phenotype_file }
 }
 
 
@@ -532,11 +540,11 @@ process roary {
 * Create required mGWAS input files using the output of roary
 */
 
-if(params.phenotype_file) {
+if(params.phenotype_info) {
     process post_roary {
 
         input:
-            file sample_phenotype_info from params.phenotype_file
+            file sample_phenotype_info from phenotype_file
 
         output:
             file("traits.csv") into traits_file
@@ -552,7 +560,7 @@ if(params.phenotype_file) {
 * Run scoary
 */
 
-if (traits_file) {
+if (phenotype_file) {
     process scoary {
 
     input:
