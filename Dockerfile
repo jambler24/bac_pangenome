@@ -191,5 +191,3 @@ RUN roary -w
 
 # docker run -it bacterial_pangenome:latest /bin/bash
 
-
-rsync -avrhP --append -e ssh ./bacterial_pangenome_latest-2020-09-30-6c4b79c8b27f.simg jambler@transfer.ilifu.ac.za:/cbio/users/jambler/images/

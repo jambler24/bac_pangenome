@@ -126,7 +126,7 @@ sample_sheet_QC
 process get_software_versions {
 
     output:
-    file 'software_versions_mqc.yaml' into software_versions_yaml
+      file 'software_versions_mqc.yaml' into software_versions_yaml
 
     script:
     """
@@ -154,11 +154,11 @@ if(params.gff){
       tag "$gff"
 
       input:
-      file gff from gffFile
+        file gff from gffFile
 
       output:
-      file "${gff.baseName}.gtf" into gtf_makeSTARindex, gtf_makeBED12, gtf_star, gtf_dupradar, gtf_featureCounts
-      file "${gff.baseName}.gff" into snpeff_gff
+        file "${gff.baseName}.gtf" into gtf_makeSTARindex, gtf_makeBED12, gtf_star, gtf_dupradar, gtf_featureCounts
+        file "${gff.baseName}.gff" into snpeff_gff
 
       script:
       """
@@ -166,15 +166,16 @@ if(params.gff){
       """
   }
 } else {
+
   process convertGTFtoGFF {
 
   input:
-  file gtf from gtfFile
+    file gtf from gtfFile
 
   output:
 
-  file "${gtf.baseName}.gtf" into gtf_makeSTARindex, gtf_makeBED12, gtf_star, gtf_dupradar, gtf_featureCounts
-  file "${gtf.baseName}.gff" into snpeff_gff
+    file "${gtf.baseName}.gtf" into gtf_makeSTARindex, gtf_makeBED12, gtf_star, gtf_dupradar, gtf_featureCounts
+    file "${gtf.baseName}.gff" into snpeff_gff
 
   script:
   """
@@ -193,7 +194,7 @@ if(params.gff){
  * Process 1A: Create a FASTA genome index (.fai) with samtools for GATK
  */
 
-process '1A_prepare_genome_samtools' {
+process 1A_prepare_genome_samtools {
   tag "$genome.baseName"
 
   input:
@@ -213,7 +214,7 @@ process '1A_prepare_genome_samtools' {
  * Process 1B: Create a FASTA genome sequence dictionary with Picard for GATK
  */
 
-process '1B_prepare_genome_picard' {
+process 1B_prepare_genome_picard {
   tag "$genome.baseName"
 
   input:
@@ -232,7 +233,7 @@ process '1B_prepare_genome_picard' {
  * Process 1C: Create a FASTA genome sequence dictionary for BWA
  */
 
-process '1C_prepare_genome_bwa' {
+process 1C_prepare_genome_bwa {
   tag "$genome.baseName"
 
   input:
@@ -262,11 +263,11 @@ process '1C_prepare_genome_bwa' {
         saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
 
     input:
-    set number, file(R1), file(R2) from newSampleChannelFastQC
+        set number, file(R1), file(R2) from newSampleChannelFastQC
 
     output:
-    file "*_fastqc.{zip,html}" into fastqc_results
-    file "*_fastqc.{zip,html}" into ch_fastqc_results
+        file "*_fastqc.{zip,html}" into fastqc_results
+        file "*_fastqc.{zip,html}" into ch_fastqc_results
 
     script:
     """
