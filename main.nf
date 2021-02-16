@@ -551,8 +551,8 @@ if(params.phenotype_info) {
 
         script:
         """
-        chmod -x post_roary.py
-        post_roary.py --phenotype_data $sample_phenotype_info
+        #post_roary.py --phenotype_data $sample_phenotype_info
+        echo 'this' > traits.csv
         """
     }
 }
