@@ -214,7 +214,7 @@ process prepare_genome_samtools {
  * Process 1B: Create a FASTA genome sequence dictionary with Picard for GATK
  */
 
-process 1B_prepare_genome_picard {
+process prepare_genome_picard {
   tag "$genome.baseName"
 
   input:
@@ -233,7 +233,7 @@ process 1B_prepare_genome_picard {
  * Process 1C: Create a FASTA genome sequence dictionary for BWA
  */
 
-process 1C_prepare_genome_bwa {
+process prepare_genome_bwa {
   tag "$genome.baseName"
 
   input:
@@ -257,7 +257,7 @@ process 1C_prepare_genome_bwa {
  * Process 1D: FastQC -  NEED TO EDIT
  */
 
- process 1D_fastqc {
+ process fastqc {
     tag "$name"
     publishDir "${params.outdir}/fastqc", mode: 'copy',
         saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
@@ -284,7 +284,7 @@ process 1C_prepare_genome_bwa {
  * STEP 1 - Trim Galore!
  */
 
-process 2A_trim_galore {
+process trim_galore {
     label 'low_memory'
     tag "$name"
     publishDir "${params.outdir}/trim_galore", mode: 'copy',
@@ -341,7 +341,7 @@ process 2A_trim_galore {
  * Process 2B: Align reads to the reference genome using bwa mem
  */
 
-process '2B_read_mapping' {
+process read_mapping {
   label 'high_memory'
   input:
     file forwardTrimmed
@@ -375,8 +375,10 @@ process '2B_read_mapping' {
  * Process 2C: Mark duplicate reads with picard - EDIT for QC
  */
 
-process '2C_mark_duplicates' {
+process mark_duplicates {
   label 'high_memory'
+  tag "${sample_bam.baseName}"
+
   input:
     file sample_bam from bamfiles
   output:
@@ -399,21 +401,22 @@ process '2C_mark_duplicates' {
  * STEP 1 - Unicycler (short mode!) for genome assembly
 */
 
-process 3A_unicycler {
+process unicycler {
     label 'high_memory'
     tag "$sample_id"
     publishDir "${params.outdir}/${sample_id}_assembly/unicycler", mode: 'copy'
 
     input:
-    set sample_id, file(fq1), file(fq2) from unicycler_read_pairs
+        set sample_id, file(fq1), file(fq2) from unicycler_read_pairs
 
     output:
-    set sample_id, file("${sample_id}_assembly.fasta") into (prokka_ch, quast_ch, dfast_ch)
-    file("${sample_id}_assembly.fasta") into (ch_assembly_nanopolish_unicycler,ch_assembly_medaka_unicycler)
-    file("${sample_id}_assembly.gfa")
-    file("${sample_id}_assembly.png")
-    file("${sample_id}_unicycler.log")
+        set sample_id, file("${sample_id}_assembly.fasta") into (prokka_ch, quast_ch, dfast_ch)
+        file("${sample_id}_assembly.fasta") into (ch_assembly_nanopolish_unicycler,ch_assembly_medaka_unicycler)
+        file("${sample_id}_assembly.gfa")
+        file("${sample_id}_assembly.png")
+        file("${sample_id}_unicycler.log")
 
+    script:
     """
     unicycler -1 $fq1 -2 $fq2 --threads ${task.cpus} --pilon_path /usr/local/bin/pilon-1.23.jar --keep 0 -o .
     mv unicycler.log ${sample_id}_unicycler.log
@@ -428,19 +431,19 @@ process 3A_unicycler {
 /*
 * Assembly qc with quast
 */
-process 3B_quast {
+process quast {
   tag {"$sample_id"}
   publishDir "${params.outdir}/${sample_id}_assembly/QUAST", mode: 'copy'
 
   input:
-  set sample_id, file(fasta) from quast_ch
+    set sample_id, file(fasta) from quast_ch
 
   output:
-  // multiqc only detects a file called report.tsv. to avoid
-  // name clash with other samples we need a directory named by sample
-  file("${sample_id}_assembly_QC/")
-  file("${sample_id}_assembly_QC/${sample_id}_report.tsv") into quast_logs_ch
-  file("v_quast_${sample_id}.txt") into ch_quast_version
+      // multiqc only detects a file called report.tsv. to avoid
+      // name clash with other samples we need a directory named by sample
+      file("${sample_id}_assembly_QC/")
+      file("${sample_id}_assembly_QC/${sample_id}_report.tsv") into quast_logs_ch
+      file("v_quast_${sample_id}.txt") into ch_quast_version
 
   script:
   """
@@ -456,19 +459,19 @@ process 3B_quast {
  * Annotation with prokka
  */
 process prokka {
-   label 'high_memory'
-   tag "$sample_id"
-   publishDir "${params.outdir}/${sample_id}_assembly/prokka", mode: 'copy'
+    label 'high_memory'
+    tag "$sample_id"
+    publishDir "${params.outdir}/${sample_id}_assembly/prokka", mode: 'copy'
 
-   input:
-   set sample_id, file(fasta) from prokka_ch
+    input:
+        set sample_id, file(fasta) from prokka_ch
 
-   output:
-   file("${sample_id}_annotation/sample_${sample_id}.gff") into gff
-   // multiqc prokka module is just a stub using txt. see https://github.com/ewels/MultiQC/issues/587
-   // also, this only makes sense if we could set genus/species/strain. otherwise all samples
-   // are the same
-   // file("${sample_id}_annotation/*txt") into prokka_logs_ch
+    output:
+        file("${sample_id}_annotation/sample_${sample_id}.gff") into gff
+        // multiqc prokka module is just a stub using txt. see https://github.com/ewels/MultiQC/issues/587
+        // also, this only makes sense if we could set genus/species/strain. otherwise all samples
+        // are the same
+        // file("${sample_id}_annotation/*txt") into prokka_logs_ch
 
    script:
    """
@@ -480,25 +483,24 @@ process prokka {
  * Annotation with dfast (if annotation_tool == 'dfast')
  */
 process dfast {
-   tag "$sample_id"
-   publishDir "${params.outdir}/${sample_id}/", mode: 'copy'
+    tag "$sample_id"
+    publishDir "${params.outdir}/${sample_id}/", mode: 'copy'
 
+    input:
+        set sample_id, file(fasta) from dfast_ch
+        file (config) from Channel.value(params.dfast_config ? file(params.dfast_config) : "")
 
-   input:
-   set sample_id, file(fasta) from dfast_ch
-   file (config) from Channel.value(params.dfast_config ? file(params.dfast_config) : "")
+    output:
+        file("RESULT*")
+        file("v_dfast.txt") into ch_dfast_version_for_multiqc
 
-   output:
-   file("RESULT*")
-   file("v_dfast.txt") into ch_dfast_version_for_multiqc
+    when: !params.skip_annotation && params.annotation_tool == 'dfast'
 
-   when: !params.skip_annotation && params.annotation_tool == 'dfast'
-
-   script:
-   """
-   python3 /usr/local/bin/dfast --genome ${fasta} --config $config
-   python3 /usr/local/bin/dfast &> v_dfast.txt 2>&1 || true
-   """
+    script:
+    """
+    python3 /usr/local/bin/dfast --genome ${fasta} --config $config
+    python3 /usr/local/bin/dfast &> v_dfast.txt 2>&1 || true
+    """
 }
 
 
@@ -512,12 +514,12 @@ process roary {
     publishDir "${params.outdir}/roary", mode: 'copy'
 
     input:
-    file gff from gff.collect()
+        file gff from gff.collect()
 
     output:
-    file("*") into roary
-    file("pan_genome_reference.fa") into pan_genome
-    file("gene_presence_absence.csv") into mGWAS_GPA
+        file("*") into roary
+        file("pan_genome_reference.fa") into pan_genome
+        file("gene_presence_absence.csv") into mGWAS_GPA
 
     script:
     """
@@ -534,10 +536,10 @@ if(params.phenotype_file) {
     process post_roary {
 
         input:
-        file sample_phenotype_info from params.phenotype_file
+            file sample_phenotype_info from params.phenotype_file
 
         output:
-        file("traits.csv") into traits_file
+            file("traits.csv") into traits_file
 
         script:
         """
@@ -554,11 +556,11 @@ if (traits_file) {
     process scoary {
 
     input:
-    file traits_file
-    file mGWAS_GPA
+        file traits_file
+        file mGWAS_GPA
 
     output:
-    file("*") into scoary
+        file("*") into scoary
 
     script:
     """
@@ -579,24 +581,22 @@ process multiqc {
     publishDir "${params.outdir}/MultiQC", mode: 'copy'
 
     input:
-    file multiqc_config from ch_multiqc_config
-    //file ('software_versions/*') from software_versions_yaml
-    file ('quast_logs/*') from quast_logs_ch.collect().ifEmpty([])
-    //file ('fastqc/*') from ch_fastqc_results.collect().ifEmpty([])
-    //path ('trim_galore/*') from ch_trimgalore_results_mqc.collect().ifEmpty([])
+        file multiqc_config from ch_multiqc_config
+        //file ('software_versions/*') from software_versions_yaml
+        file ('quast_logs/*') from quast_logs_ch.collect().ifEmpty([])
+        file ('fastqc/*') from ch_fastqc_results.collect().ifEmpty([])
+        path ('trim_galore/*') from ch_trimgalore_results_mqc.collect().ifEmpty([])
 
     output:
-    //file "*multiqc_report.html" into multiqc_report
-    //file "*_data"
-    //file "multiqc_plots"
-    file "error.txt"
+        file "*multiqc_report.html" into multiqc_report
+        file "*_data"
+        file "multiqc_plots"
 
     script:
     rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
     rfilename = custom_runName ? "--filename " + custom_runName.replaceAll('\\W','_').replaceAll('_+','_') + "_multiqc_report" : ''
     """
-    #multiqc -f $rtitle $rfilename --config $multiqc_config .
-    echo "too many bugs" > error.txt
+    multiqc -f $rtitle $rfilename --config $multiqc_config .
     """
 }
 
