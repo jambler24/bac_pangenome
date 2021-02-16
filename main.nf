@@ -551,7 +551,7 @@ if(params.phenotype_info) {
 
         script:
         """
-        python3 post_roary.py --phenotype_data $sample_phenotype_info
+        post_roary.py --phenotype_data $sample_phenotype_info
         """
     }
 }
