@@ -194,7 +194,7 @@ if(params.gff){
  * Process 1A: Create a FASTA genome index (.fai) with samtools for GATK
  */
 
-process 1A_prepare_genome_samtools {
+process prepare_genome_samtools {
   tag "$genome.baseName"
 
   input:
