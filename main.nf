@@ -102,7 +102,7 @@ if( params.gtf ){
 }
 
 
-if(params.phenotype_info{
+if(params.phenotype_info) {
     Channel
         .fromPath(params.phenotype_info)
         .ifEmpty { exit 1, "Phenotype file not found: ${params.phenotype_info}" }
@@ -110,10 +110,10 @@ if(params.phenotype_info{
 }
 
 
-genome_file     = file(params.genome)
-sample_sheet    = Channel.fromPath(params.reads)
-sample_sheet_QC    = Channel.fromPath(params.reads)
-reads_ch        = Channel.fromFilePairs(params.reads)
+genome_file         = file(params.genome)
+sample_sheet        = Channel.fromPath(params.reads)
+sample_sheet_QC     = Channel.fromPath(params.reads)
+reads_ch            = Channel.fromFilePairs(params.reads)
 
 sample_sheet
   .splitCsv(header:true)
