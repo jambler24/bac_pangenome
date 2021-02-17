@@ -59,8 +59,11 @@ RUN apt-get install -y -q libdatetime-perl libxml-simple-perl libdigest-md5-perl
 # Roary works from here
 
 RUN apt-get update -y
+
+# Why did I have to install blast like this? Specific version requirements? Or specific path requirements?
 RUN mkdir /tools/
-RUN wget -O /tools/ncbi-blast-2.8.1+-x64-linux.tar.gz ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/2.8.1/ncbi-blast-2.8.1+-x64-linux.tar.gz
+RUN ls
+RUN wget --no-verbose -O /tools/ncbi-blast-2.8.1+-x64-linux.tar.gz ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/2.8.1/ncbi-blast-2.8.1+-x64-linux.tar.gz
 RUN tar -zxvf /tools/ncbi-blast-2.8.1+-x64-linux.tar.gz -C /tools/
 ENV PATH=/tools/ncbi-blast-2.8.1+/bin:$PATH
 RUN /tools/ncbi-blast-2.8.1+/bin/makeblastdb -h
@@ -158,7 +161,7 @@ RUN echo 'java -jar /usr/local/bin/pilon-1.23.jar "$@"' > /usr/bin/pilon && \
 
 RUN apt-get install python-setuptools pkg-config libfreetype6-dev libpng-dev python-matplotlib -y
 RUN apt-get install python-pip -y
-RUN pip install --upgrade pip
+RUN pip install --upgrade pip==20.3.3
 RUN pip install joblib
 RUN wget https://downloads.sourceforge.net/project/quast/quast-5.0.2.tar.gz && tar -xzf quast-5.0.2.tar.gz && cd quast-5.0.2 && ./setup.py install
 RUN cd ~
