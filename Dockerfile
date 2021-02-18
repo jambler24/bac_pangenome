@@ -184,6 +184,12 @@ RUN curl -fsSL https://github.com/smithlabcode/preseq/releases/download/v2.0.3/p
 RUN cd /tools/preseq/ && make && make install
 ENV PATH=/tools/preseq/:$PATH
 
+RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.7 1
+
+RUN update-alternatives --config python3
+
+RUN python3 -m pip install --upgrade pip
+RUN python3 -m pip install --upgrade cutadapt
 
 #RUN spades.py --test
 RUN roary -w
