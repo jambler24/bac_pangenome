@@ -551,6 +551,7 @@ if(params.phenotype_info) {
 
         script:
         """
+        # Issue caused by not being able to run binaries.
         #post_roary.py --phenotype_data $sample_phenotype_info
         echo 'this' > traits.csv
         """

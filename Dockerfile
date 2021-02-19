@@ -191,7 +191,12 @@ RUN update-alternatives --config python3
 RUN python3 -m pip install --upgrade pip
 RUN python3 -m pip install --upgrade cutadapt
 
+RUN git clone https://github.com/rrwick/Unicycler.git && cd Unicycler && python3 setup.py install && cd ~
+
 #RUN spades.py --test
+
+RUN unicycler --version
+RUN cutadapt --version
 RUN roary -w
 
 #docker build -t bacterial_pangenome -f Dockerfile .
