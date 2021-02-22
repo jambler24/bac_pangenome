@@ -189,15 +189,30 @@ RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.7 1
 RUN update-alternatives --config python3
 
 RUN python3 -m pip install --upgrade pip
+
+# Install SPAdes (Must be version 3.13.0 for unicycler
+RUN wget http://cab.spbu.ru/files/release3.13.0/SPAdes-3.13.0-Linux.tar.gz
+RUN tar -xzf SPAdes-3.13.0-Linux.tar.gz
+RUN cd SPAdes-3.13.0-Linux/bin/
+ENV PATH=/SPAdes-3.13.0-Linux/bin/:$PATH
+
 RUN python3 -m pip install --upgrade cutadapt
 
 RUN git clone https://github.com/rrwick/Unicycler.git && cd Unicycler && python3 setup.py install && cd ~
 
-#RUN spades.py --test
+RUN wget https://ftp.ncbi.nih.gov/toolbox/ncbi_tools/converters/by_program/tbl2asn/linux.tbl2asn.gz
+RUN gunzip linux.tbl2asn.gz
+RUN mv linux.tbl2asn /tools/tbl2asn
+RUN chmod a+x /tools/tbl2asn
+ENV PATH=/tools/:$PATH
+
+RUN spades.py --test
 
 RUN unicycler --version
 RUN cutadapt --version
 RUN roary -w
+RUN prokka -v
+RUN tbl2asn -
 
 #docker build -t bacterial_pangenome -f Dockerfile .
 
