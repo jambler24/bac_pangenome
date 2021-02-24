@@ -595,7 +595,7 @@ process multiqc {
         //file ('software_versions/*') from software_versions_yaml
         file ('quast_logs/*') from quast_logs_ch.collect().ifEmpty([])
         file ('fastqc/*') from ch_fastqc_results.collect().ifEmpty([])
-        path ('trim_galore/*')
+        file ('trim_galore/*') from ch_trimgalore_results_mqc.collect()
 
     output:
         file "*multiqc_report.html" into multiqc_report
