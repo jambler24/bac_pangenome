@@ -587,6 +587,7 @@ if (phenotype_file) {
  * MultiQC
  */
 
+/*
 process multiqc {
     publishDir "${params.outdir}/MultiQC", mode: 'copy'
 
@@ -610,4 +611,4 @@ process multiqc {
     """
 }
 
-
+*/
