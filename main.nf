@@ -86,7 +86,7 @@ if ( params.reads == false ) {
     exit 1, "Must set the path to the sample file (--reads) in csv format"
 }
 
-// SNPeff needs a gff, all else gtf.
+// Dealing with GFT and GFF.
 if( params.gtf ){
     Channel
         .fromPath(params.gtf)
@@ -166,7 +166,6 @@ if(params.gff){
 
       output:
         file "${gff.baseName}.gtf" into gtf_makeSTARindex, gtf_makeBED12, gtf_star, gtf_dupradar, gtf_featureCounts
-        file "${gff.baseName}.gff" into snpeff_gff
 
       script:
       """
@@ -183,7 +182,7 @@ if(params.gff){
   output:
 
     file "${gtf.baseName}.gtf" into gtf_makeSTARindex, gtf_makeBED12, gtf_star, gtf_dupradar, gtf_featureCounts
-    file "${gtf.baseName}.gff" into snpeff_gff
+    file "${gtf.baseName}.gff" into snpeff_gff_old_to_test_deleting
 
   script:
   """
