@@ -80,7 +80,7 @@ UCT cluster.
 ## Credits
 This pipeline was developed by members of the Bioinformatics Support Team (BST) at the University of Cape Town. Dr.
 Jon Ambler is a member of CIDRI-Africa, and the main developer of this pipeline, using the layout and documentation
- outlined by Dr Katie Lennard and Gerrit Botha. Adapted from the nf-core/rnaseq pipeline. 
+ outlined by Dr Katie Lennard and Gerrit Botha. Adapted from the nf-core bacass pipeline. 
 
 Additional thanks to Paolo Di Tommaso, the developer of NextFlow, for their help troubleshooting. 
 
