@@ -289,6 +289,8 @@ process prepare_genome_bwa {
  * PART 2: Data filtering and trimming
  *
  * STEP 1 - Trim Galore!
+ *
+ * Once again, dealing with different files names and extensions has made things tricky.
  */
 
 process trim_galore {

@@ -72,15 +72,20 @@ To create a Singularity image from a Docker image, please make use of
 [Docker to singularity](https://github.com/singularityware/docker2singularity). This is needed to run the pipeline on the
 UCT cluster. 
 
+Alignment to a reference genome is used for QC purposes, but this can be replaced with an alignment free alternative. 
+
+Running Scoary with too many traits will cause the pipeline to crash. Subsetting the traits file can help, but 
+correction for multiple testing will need to be repeated post. 
+
 ## Built With
 * [Nextflow](https://www.nextflow.io/)
 * [Docker](https://www.docker.com/what-docker)
 * [Singularity](https://singularity.lbl.gov/)
 
 ## Credits
-This pipeline was developed by members of the Bioinformatics Support Team (BST) at the University of Cape Town. Dr.
+This pipeline was developed by members of the Bioinformatics Support Team (BST) at the University of Cape Town. 
 Jon Ambler is a member of CIDRI-Africa, and the main developer of this pipeline, using the layout and documentation
- outlined by Dr Katie Lennard and Gerrit Botha. Adapted from the nf-core bacass pipeline. 
+ outlined by Katie Lennard and Gerrit Botha. Adapted from the nf-core bacass pipeline. 
 
 Additional thanks to Paolo Di Tommaso, the developer of NextFlow, for their help troubleshooting. 
 
